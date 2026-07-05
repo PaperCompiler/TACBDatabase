@@ -4,7 +4,6 @@ import com.j256.ormlite.dao.Dao;
 import com.j256.ormlite.dao.DaoManager;
 import com.j256.ormlite.jdbc.JdbcConnectionSource;
 import com.j256.ormlite.support.ConnectionSource;
-import com.zaxxer.hikari.HikariDataSource;
 import de.papercompiler.tacbdatabase.cache.CacheManager;
 import de.papercompiler.tacbdatabase.config.DatabaseConfig;
 import de.papercompiler.tacbdatabase.entity.Ban;
@@ -65,20 +64,17 @@ public final class RepositoryFactory {
             PubSubManager pubSubManager,
             Map<Class<?>, Repository<?, ?>> repositories) {
 
-        HikariDataSource dataSource = null;
         ConnectionSource connectionSource = null;
 
         try {
             DatabaseConfig dbConfig = config.getDatabase();
-            dataSource = new HikariDataSource();
-            dataSource.setJdbcUrl(dbConfig.getJdbcUrl());
-            dataSource.setUsername(dbConfig.getUsername());
-            dataSource.setPassword(dbConfig.getPassword());
-            dataSource.setMaximumPoolSize(dbConfig.getMaximumPoolSize());
-            dataSource.setMinimumIdle(dbConfig.getMinimumIdle());
 
-            // Use HikariCP DataSource with JdbcConnectionSource
-            connectionSource = new JdbcConnectionSource(dataSource);
+            // Use JDBC URL directly with JdbcConnectionSource
+            connectionSource = new JdbcConnectionSource(
+                    dbConfig.getJdbcUrl(),
+                    dbConfig.getUsername(),
+                    dbConfig.getPassword()
+            );
 
             // Create ORMLite DAOs
             Dao<Player, Long> playerDao = DaoManager.createDao(connectionSource, Player.class);
