@@ -103,7 +103,9 @@ public class CachedGuildRepository implements GuildRepository {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 guildDao.create(guild);
-                cacheManager.put(CACHE_KEY_PREFIX + guild.getId(), guild, CACHE_TTL);
+                if (guild.getId() != null) {
+                    cacheManager.put(CACHE_KEY_PREFIX + guild.getId(), guild, CACHE_TTL);
+                }
                 guild.setDirty(false);
                 return guild;
             } catch (Exception e) {
@@ -117,7 +119,9 @@ public class CachedGuildRepository implements GuildRepository {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 guildDao.update(guild);
-                cacheManager.put(CACHE_KEY_PREFIX + guild.getId(), guild, CACHE_TTL);
+                if (guild.getId() != null) {
+                    cacheManager.put(CACHE_KEY_PREFIX + guild.getId(), guild, CACHE_TTL);
+                }
                 guild.setDirty(false);
                 return guild;
             } catch (Exception e) {
@@ -131,7 +135,9 @@ public class CachedGuildRepository implements GuildRepository {
         return CompletableFuture.runAsync(() -> {
             try {
                 guildDao.delete(guild);
-                cacheManager.evict(CACHE_KEY_PREFIX + guild.getId());
+                if (guild.getId() != null) {
+                    cacheManager.evict(CACHE_KEY_PREFIX + guild.getId());
+                }
             } catch (Exception e) {
                 throw new RuntimeException("Failed to delete guild", e);
             }
@@ -143,7 +149,9 @@ public class CachedGuildRepository implements GuildRepository {
         return CompletableFuture.runAsync(() -> {
             try {
                 guildDao.deleteById(id);
-                cacheManager.evict(CACHE_KEY_PREFIX + id);
+                if (id != null) {
+                    cacheManager.evict(CACHE_KEY_PREFIX + id);
+                }
             } catch (Exception e) {
                 throw new RuntimeException("Failed to delete guild by id", e);
             }

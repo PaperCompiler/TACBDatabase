@@ -140,9 +140,15 @@ public class CachedPlayerRepository implements PlayerRepository {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 playerDao.create(player);
-                cacheManager.put(CACHE_KEY_PREFIX + player.getId(), player, CACHE_TTL);
-                cacheManager.put(CACHE_KEY_PREFIX + "uuid:" + player.getUuid(), player, CACHE_TTL);
-                cacheManager.put(CACHE_KEY_PREFIX + "name:" + player.getName(), player, CACHE_TTL);
+                if (player.getId() != null) {
+                    cacheManager.put(CACHE_KEY_PREFIX + player.getId(), player, CACHE_TTL);
+                }
+                if (player.getUuid() != null) {
+                    cacheManager.put(CACHE_KEY_PREFIX + "uuid:" + player.getUuid(), player, CACHE_TTL);
+                }
+                if (player.getName() != null) {
+                    cacheManager.put(CACHE_KEY_PREFIX + "name:" + player.getName(), player, CACHE_TTL);
+                }
                 player.setDirty(false);
                 return player;
             } catch (Exception e) {
@@ -156,8 +162,12 @@ public class CachedPlayerRepository implements PlayerRepository {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 playerDao.update(player);
-                cacheManager.put(CACHE_KEY_PREFIX + player.getId(), player, CACHE_TTL);
-                cacheManager.put(CACHE_KEY_PREFIX + "uuid:" + player.getUuid(), player, CACHE_TTL);
+                if (player.getId() != null) {
+                    cacheManager.put(CACHE_KEY_PREFIX + player.getId(), player, CACHE_TTL);
+                }
+                if (player.getUuid() != null) {
+                    cacheManager.put(CACHE_KEY_PREFIX + "uuid:" + player.getUuid(), player, CACHE_TTL);
+                }
                 player.setDirty(false);
                 return player;
             } catch (Exception e) {
@@ -171,8 +181,15 @@ public class CachedPlayerRepository implements PlayerRepository {
         return CompletableFuture.runAsync(() -> {
             try {
                 playerDao.delete(player);
-                cacheManager.evict(CACHE_KEY_PREFIX + player.getId());
-                cacheManager.evict(CACHE_KEY_PREFIX + "uuid:" + player.getUuid());
+                if (player.getId() != null) {
+                    cacheManager.evict(CACHE_KEY_PREFIX + player.getId());
+                }
+                if (player.getUuid() != null) {
+                    cacheManager.evict(CACHE_KEY_PREFIX + "uuid:" + player.getUuid());
+                }
+                if (player.getName() != null) {
+                    cacheManager.evict(CACHE_KEY_PREFIX + "name:" + player.getName());
+                }
             } catch (Exception e) {
                 throw new RuntimeException("Failed to delete player", e);
             }

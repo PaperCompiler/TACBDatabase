@@ -112,6 +112,7 @@ public class LettucePubSubManager implements PubSubManager {
                 commands.subscribe(channel);
             } catch (Exception e) {
                 LOGGER.error("Failed to subscribe to channel: {}", channel, e);
+                throw new RuntimeException("Failed to subscribe to channel: " + channel, e);
             }
         }, executor);
     }
@@ -128,6 +129,7 @@ public class LettucePubSubManager implements PubSubManager {
                 }
             } catch (Exception e) {
                 LOGGER.error("Failed to unsubscribe from channel: {}", channel, e);
+                throw new RuntimeException("Failed to unsubscribe from channel: " + channel, e);
             }
         }, executor);
     }
@@ -144,6 +146,7 @@ public class LettucePubSubManager implements PubSubManager {
                 throw new RuntimeException("Failed to serialize pub/sub message", e);
             } catch (Exception e) {
                 LOGGER.error("Failed to publish to channel: {}", channel, e);
+                throw new RuntimeException("Failed to publish to channel: " + channel, e);
             }
         }, executor);
     }
@@ -157,6 +160,7 @@ public class LettucePubSubManager implements PubSubManager {
                 commands.publish(channel, new String(data, java.nio.charset.StandardCharsets.UTF_8));
             } catch (Exception e) {
                 LOGGER.error("Failed to publish to channel: {}", channel, e);
+                throw new RuntimeException("Failed to publish to channel: " + channel, e);
             }
         }, executor);
     }

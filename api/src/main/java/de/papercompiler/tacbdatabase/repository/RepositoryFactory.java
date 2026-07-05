@@ -2,7 +2,7 @@ package de.papercompiler.tacbdatabase.repository;
 
 import com.j256.ormlite.dao.Dao;
 import com.j256.ormlite.dao.DaoManager;
-import com.j256.ormlite.jdbc.JdbcConnectionSource;
+import com.j256.ormlite.jdbc.DataSourceConnectionSource;
 import com.j256.ormlite.support.ConnectionSource;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
@@ -18,6 +18,7 @@ import de.papercompiler.tacbdatabase.pubsub.PubSubManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.sql.DataSource;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
@@ -38,10 +39,12 @@ public final class RepositoryFactory {
     public static final class RepositoryResult {
         private final Map<Class<?>, Repository<?, ?>> repositories;
         private final HikariDataSource dataSource;
+        private final ConnectionSource connectionSource;
 
-        public RepositoryResult(Map<Class<?>, Repository<?, ?>> repositories, HikariDataSource dataSource) {
+        public RepositoryResult(Map<Class<?>, Repository<?, ?>> repositories, HikariDataSource dataSource, ConnectionSource connectionSource) {
             this.repositories = repositories;
             this.dataSource = dataSource;
+            this.connectionSource = connectionSource;
         }
 
         public Map<Class<?>, Repository<?, ?>> getRepositories() {
@@ -50,6 +53,10 @@ public final class RepositoryFactory {
 
         public HikariDataSource getDataSource() {
             return dataSource;
+        }
+
+        public ConnectionSource getConnectionSource() {
+            return connectionSource;
         }
     }
 
@@ -70,23 +77,29 @@ public final class RepositoryFactory {
 
         Map<Class<?>, Repository<?, ?>> repositories = new HashMap<>();
         HikariDataSource dataSource = null;
+        ConnectionSource connectionSource = null;
 
         if (type == PlatformType.VELOCITY) {
             // Master node: PostgreSQL + Redis cache
-            dataSource = createMasterRepositories(config, cacheManager, pubSubManager, repositories);
+            MasterRepoResult masterResult = createMasterRepositories(config, cacheManager, pubSubManager, repositories);
+            dataSource = masterResult.dataSource;
+            connectionSource = masterResult.connectionSource;
         } else {
             // Slave node: Redis only
             createSlaveRepositories(cacheManager, pubSubManager, repositories);
         }
 
-        return new RepositoryResult(repositories, dataSource);
+        return new RepositoryResult(repositories, dataSource, connectionSource);
     }
 
-    private static HikariDataSource createMasterRepositories(
+    private static MasterRepoResult createMasterRepositories(
             de.papercompiler.tacbdatabase.config.TACBConfig config,
             CacheManager cacheManager,
             PubSubManager pubSubManager,
             Map<Class<?>, Repository<?, ?>> repositories) {
+
+        HikariDataSource dataSource = null;
+        ConnectionSource connectionSource = null;
 
         try {
             DatabaseConfig dbConfig = config.getDatabase();
@@ -100,15 +113,10 @@ public final class RepositoryFactory {
             hikariConfig.setMinimumIdle(dbConfig.getMinimumIdle());
             hikariConfig.setPoolName("tacb-postgres-pool");
 
-            HikariDataSource dataSource = new HikariDataSource(hikariConfig);
+            dataSource = new HikariDataSource(hikariConfig);
 
-            // Create connection source - we use the URL directly and keep the pool open
-            // The HikariDataSource will be closed in TACBDatabase.shutdown()
-            ConnectionSource connectionSource = new JdbcConnectionSource(
-                    dbConfig.getJdbcUrl(),
-                    dbConfig.getUsername(),
-                    dbConfig.getPassword()
-            );
+            // Create ORMLite connection source backed by HikariCP pool
+            connectionSource = new DataSourceConnectionSource((DataSource) dataSource, dbConfig.getJdbcUrl());
 
             // Create ORMLite DAOs
             Dao<Player, Long> playerDao = DaoManager.createDao(connectionSource, Player.class);
@@ -125,8 +133,10 @@ public final class RepositoryFactory {
             repositories.put(Ban.class, new CachedBanRepository(banDao, cacheManager, pubSubManager));
 
             LOGGER.info("Created master repositories with PostgreSQL backend");
-            return dataSource;
+            return new MasterRepoResult(dataSource, connectionSource);
         } catch (SQLException e) {
+            closeQuietly(connectionSource, "connection source");
+            closeQuietly(dataSource, "HikariCP data source");
             throw new RuntimeException("Failed to create master repositories", e);
         }
     }
@@ -144,5 +154,28 @@ public final class RepositoryFactory {
         repositories.put(Ban.class, new RedisBanRepository(cacheManager, pubSubManager));
 
         LOGGER.info("Created slave repositories with Redis-only backend");
+    }
+
+    private static void closeQuietly(AutoCloseable resource, String name) {
+        if (resource != null) {
+            try {
+                resource.close();
+            } catch (Exception e) {
+                LOGGER.error("Failed to close {}", name, e);
+            }
+        }
+    }
+
+    /**
+     * Helper class to return multiple values from createMasterRepositories.
+     */
+    private static final class MasterRepoResult {
+        final HikariDataSource dataSource;
+        final ConnectionSource connectionSource;
+
+        MasterRepoResult(HikariDataSource dataSource, ConnectionSource connectionSource) {
+            this.dataSource = dataSource;
+            this.connectionSource = connectionSource;
+        }
     }
 }

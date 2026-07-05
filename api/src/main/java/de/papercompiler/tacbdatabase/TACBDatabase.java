@@ -65,6 +65,7 @@ public final class TACBDatabase {
     private final Scheduler scheduler;
     private final io.lettuce.core.RedisClient redisClient;
     private final HikariDataSource dataSource;
+    private final com.j256.ormlite.support.ConnectionSource connectionSource;
 
     private TACBDatabase(
             Platform platform,
@@ -76,7 +77,8 @@ public final class TACBDatabase {
             SyncScheduler syncScheduler,
             Scheduler scheduler,
             io.lettuce.core.RedisClient redisClient,
-            HikariDataSource dataSource) {
+            HikariDataSource dataSource,
+            com.j256.ormlite.support.ConnectionSource connectionSource) {
         this.platform = platform;
         this.platformType = platformType;
         this.cacheManager = cacheManager;
@@ -87,6 +89,7 @@ public final class TACBDatabase {
         this.scheduler = scheduler;
         this.redisClient = redisClient;
         this.dataSource = dataSource;
+        this.connectionSource = connectionSource;
     }
 
     /**
@@ -123,7 +126,7 @@ public final class TACBDatabase {
         }
 
         return new TACBDatabase(
-                platform, type, cacheManager, pubSubManager, packetManager, result.getRepositories(), syncScheduler, platform.getScheduler(), redisComponents.client(), result.getDataSource()
+                platform, type, cacheManager, pubSubManager, packetManager, result.getRepositories(), syncScheduler, platform.getScheduler(), redisComponents.client(), result.getDataSource(), result.getConnectionSource()
         );
     }
 
@@ -244,13 +247,14 @@ public final class TACBDatabase {
         pubSubManager.close();
         cacheManager.close();
 
-        // Close the PostgreSQL connection pool (master only)
-        if (dataSource != null) {
+        // Close the ORMLite connection source (master only)
+        // This also closes the underlying HikariCP connection pool
+        if (connectionSource != null) {
             try {
-                dataSource.close();
-                LOGGER.info("Closed PostgreSQL connection pool");
+                connectionSource.close();
+                LOGGER.info("Closed ORMLite connection source and PostgreSQL connection pool");
             } catch (Exception e) {
-                LOGGER.error("Error closing PostgreSQL connection pool", e);
+                LOGGER.error("Error closing connection source", e);
             }
         }
 
