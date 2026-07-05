@@ -1,5 +1,6 @@
 plugins {
     `java-library`
+    `maven-publish`
 }
 
 group = "de.papercompiler"
@@ -43,5 +44,26 @@ tasks.test {
 java {
     toolchain {
         languageVersion.set(JavaLanguageVersion.of(21))
+    }
+}
+
+publishing {
+    repositories {
+        maven {
+            name = "tacbRepo"
+            url = uri("https://repo.tacb-mc.de/repository/maven-releases/")
+            credentials {
+                username = findProperty("repoUsername") as String? ?: System.getenv("REPO_USERNAME")
+                password = findProperty("repoPassword") as String? ?: System.getenv("REPO_PASSWORD")
+            }
+        }
+    }
+    publications {
+        create<MavenPublication>("maven") {
+            from(components["java"])
+            groupId = project.group as String
+            artifactId = project.name
+            version = project.version as String
+        }
     }
 }
