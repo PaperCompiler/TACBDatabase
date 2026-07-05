@@ -1,0 +1,4 @@
+name: TACBDatabase
+version: 1.0-SNAPSHOT
+main: de.papercompiler.tacbdatabase.paper.PaperBootstrap
+api-version: 1.20
