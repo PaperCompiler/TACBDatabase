@@ -84,8 +84,12 @@ public class RedisPlayerRepository implements PlayerRepository {
                 }
                 player.setDirty(true);
                 cacheManager.put(CACHE_KEY_PREFIX + player.getId(), player, CACHE_TTL);
-                cacheManager.put(CACHE_KEY_PREFIX + "uuid:" + player.getUuid(), player, CACHE_TTL);
-                cacheManager.put(CACHE_KEY_PREFIX + "name:" + player.getName(), player, CACHE_TTL);
+                if (player.getUuid() != null) {
+                    cacheManager.put(CACHE_KEY_PREFIX + "uuid:" + player.getUuid(), player, CACHE_TTL);
+                }
+                if (player.getName() != null) {
+                    cacheManager.put(CACHE_KEY_PREFIX + "name:" + player.getName(), player, CACHE_TTL);
+                }
                 return player;
             } catch (Exception e) {
                 throw new RuntimeException("Failed to save player to cache", e);
@@ -101,15 +105,24 @@ public class RedisPlayerRepository implements PlayerRepository {
     @Override
     public CompletableFuture<Void> delete(Player player) {
         return CompletableFuture.runAsync(() -> {
-            cacheManager.evict(CACHE_KEY_PREFIX + player.getId());
-            cacheManager.evict(CACHE_KEY_PREFIX + "uuid:" + player.getUuid());
+            if (player.getId() != null) {
+                cacheManager.evict(CACHE_KEY_PREFIX + player.getId());
+            }
+            if (player.getUuid() != null) {
+                cacheManager.evict(CACHE_KEY_PREFIX + "uuid:" + player.getUuid());
+            }
+            if (player.getName() != null) {
+                cacheManager.evict(CACHE_KEY_PREFIX + "name:" + player.getName());
+            }
         });
     }
 
     @Override
     public CompletableFuture<Void> deleteById(Long id) {
         return CompletableFuture.runAsync(() -> {
-            cacheManager.evict(CACHE_KEY_PREFIX + id);
+            if (id != null) {
+                cacheManager.evict(CACHE_KEY_PREFIX + id);
+            }
         });
     }
 

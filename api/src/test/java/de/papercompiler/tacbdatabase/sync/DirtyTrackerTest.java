@@ -1,12 +1,10 @@
 package de.papercompiler.tacbdatabase.sync;
 
 import de.papercompiler.tacbdatabase.cache.CacheManager;
-import de.papercompiler.tacbdatabase.entity.Entity;
 import de.papercompiler.tacbdatabase.entity.Player;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;

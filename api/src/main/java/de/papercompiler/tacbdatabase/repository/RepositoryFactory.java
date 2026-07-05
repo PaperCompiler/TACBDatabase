@@ -4,6 +4,8 @@ import com.j256.ormlite.dao.Dao;
 import com.j256.ormlite.dao.DaoManager;
 import com.j256.ormlite.jdbc.JdbcConnectionSource;
 import com.j256.ormlite.support.ConnectionSource;
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
 import de.papercompiler.tacbdatabase.cache.CacheManager;
 import de.papercompiler.tacbdatabase.config.DatabaseConfig;
 import de.papercompiler.tacbdatabase.entity.Ban;
@@ -31,46 +33,78 @@ public final class RepositoryFactory {
     }
 
     /**
+     * Result of creating repositories, including optional resources to manage.
+     */
+    public static final class RepositoryResult {
+        private final Map<Class<?>, Repository<?, ?>> repositories;
+        private final HikariDataSource dataSource;
+
+        public RepositoryResult(Map<Class<?>, Repository<?, ?>> repositories, HikariDataSource dataSource) {
+            this.repositories = repositories;
+            this.dataSource = dataSource;
+        }
+
+        public Map<Class<?>, Repository<?, ?>> getRepositories() {
+            return repositories;
+        }
+
+        public HikariDataSource getDataSource() {
+            return dataSource;
+        }
+    }
+
+    /**
      * Creates all repositories based on the platform type.
      *
      * @param type        the platform type
      * @param config      the configuration
      * @param cacheManager the cache manager
      * @param pubSubManager the pub/sub manager
-     * @return a map of entity class to repository
+     * @return a result containing the repositories and optional data source
      */
-    public static Map<Class<?>, Repository<?, ?>> create(
+    public static RepositoryResult create(
             PlatformType type,
             de.papercompiler.tacbdatabase.config.TACBConfig config,
             CacheManager cacheManager,
             PubSubManager pubSubManager) {
 
         Map<Class<?>, Repository<?, ?>> repositories = new HashMap<>();
+        HikariDataSource dataSource = null;
 
         if (type == PlatformType.VELOCITY) {
             // Master node: PostgreSQL + Redis cache
-            createMasterRepositories(config, cacheManager, pubSubManager, repositories);
+            dataSource = createMasterRepositories(config, cacheManager, pubSubManager, repositories);
         } else {
             // Slave node: Redis only
             createSlaveRepositories(cacheManager, pubSubManager, repositories);
         }
 
-        return repositories;
+        return new RepositoryResult(repositories, dataSource);
     }
 
-    private static void createMasterRepositories(
+    private static HikariDataSource createMasterRepositories(
             de.papercompiler.tacbdatabase.config.TACBConfig config,
             CacheManager cacheManager,
             PubSubManager pubSubManager,
             Map<Class<?>, Repository<?, ?>> repositories) {
 
-        ConnectionSource connectionSource = null;
-
         try {
             DatabaseConfig dbConfig = config.getDatabase();
 
-            // Use JDBC URL directly with JdbcConnectionSource
-            connectionSource = new JdbcConnectionSource(
+            // Create HikariCP connection pool
+            HikariConfig hikariConfig = new HikariConfig();
+            hikariConfig.setJdbcUrl(dbConfig.getJdbcUrl());
+            hikariConfig.setUsername(dbConfig.getUsername());
+            hikariConfig.setPassword(dbConfig.getPassword());
+            hikariConfig.setMaximumPoolSize(dbConfig.getMaximumPoolSize());
+            hikariConfig.setMinimumIdle(dbConfig.getMinimumIdle());
+            hikariConfig.setPoolName("tacb-postgres-pool");
+
+            HikariDataSource dataSource = new HikariDataSource(hikariConfig);
+
+            // Create connection source - we use the URL directly and keep the pool open
+            // The HikariDataSource will be closed in TACBDatabase.shutdown()
+            ConnectionSource connectionSource = new JdbcConnectionSource(
                     dbConfig.getJdbcUrl(),
                     dbConfig.getUsername(),
                     dbConfig.getPassword()
@@ -91,17 +125,9 @@ public final class RepositoryFactory {
             repositories.put(Ban.class, new CachedBanRepository(banDao, cacheManager, pubSubManager));
 
             LOGGER.info("Created master repositories with PostgreSQL backend");
+            return dataSource;
         } catch (SQLException e) {
             throw new RuntimeException("Failed to create master repositories", e);
-        } finally {
-            // Close connection source but keep dataSource alive for the lifetime of the app
-            if (connectionSource != null) {
-                try {
-                    connectionSource.close();
-                } catch (Exception e) {
-                    LOGGER.error("Failed to close connection source", e);
-                }
-            }
         }
     }
 

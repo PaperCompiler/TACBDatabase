@@ -1,5 +1,6 @@
 package de.papercompiler.tacbdatabase;
 
+import com.zaxxer.hikari.HikariDataSource;
 import de.papercompiler.tacbdatabase.cache.CacheManager;
 import de.papercompiler.tacbdatabase.config.TACBConfig;
 import de.papercompiler.tacbdatabase.entity.Ban;
@@ -63,6 +64,7 @@ public final class TACBDatabase {
     private final SyncScheduler syncScheduler;
     private final Scheduler scheduler;
     private final io.lettuce.core.RedisClient redisClient;
+    private final HikariDataSource dataSource;
 
     private TACBDatabase(
             Platform platform,
@@ -73,7 +75,8 @@ public final class TACBDatabase {
             Map<Class<?>, Repository<?, ?>> repositories,
             SyncScheduler syncScheduler,
             Scheduler scheduler,
-            io.lettuce.core.RedisClient redisClient) {
+            io.lettuce.core.RedisClient redisClient,
+            HikariDataSource dataSource) {
         this.platform = platform;
         this.platformType = platformType;
         this.cacheManager = cacheManager;
@@ -83,6 +86,7 @@ public final class TACBDatabase {
         this.syncScheduler = syncScheduler;
         this.scheduler = scheduler;
         this.redisClient = redisClient;
+        this.dataSource = dataSource;
     }
 
     /**
@@ -103,7 +107,7 @@ public final class TACBDatabase {
         PubSubManager pubSubManager = new LettucePubSubManager(redisComponents.client(), config.getRedis());
 
         // Initialize repositories
-        Map<Class<?>, Repository<?, ?>> repositories = RepositoryFactory.create(
+        RepositoryFactory.RepositoryResult result = RepositoryFactory.create(
                 type, config, cacheManager, pubSubManager
         );
 
@@ -113,13 +117,13 @@ public final class TACBDatabase {
         // Initialize sync scheduler (master only)
         SyncScheduler syncScheduler = null;
         if (type == PlatformType.VELOCITY) {
-            syncScheduler = new SyncScheduler(repositories, cacheManager, config.getSyncInterval(), platform.getScheduler());
+            syncScheduler = new SyncScheduler(result.getRepositories(), cacheManager, config.getSyncInterval(), platform.getScheduler());
             syncScheduler.start();
             LOGGER.info("SyncScheduler started with interval: {}", config.getSyncInterval());
         }
 
         return new TACBDatabase(
-                platform, type, cacheManager, pubSubManager, packetManager, repositories, syncScheduler, platform.getScheduler(), redisComponents.client()
+                platform, type, cacheManager, pubSubManager, packetManager, result.getRepositories(), syncScheduler, platform.getScheduler(), redisComponents.client(), result.getDataSource()
         );
     }
 
@@ -239,7 +243,17 @@ public final class TACBDatabase {
         packetManager.close();
         pubSubManager.close();
         cacheManager.close();
-        
+
+        // Close the PostgreSQL connection pool (master only)
+        if (dataSource != null) {
+            try {
+                dataSource.close();
+                LOGGER.info("Closed PostgreSQL connection pool");
+            } catch (Exception e) {
+                LOGGER.error("Error closing PostgreSQL connection pool", e);
+            }
+        }
+
         // Shutdown the shared Redis client last, after all connections are closed
         if (redisClient != null) {
             try {
