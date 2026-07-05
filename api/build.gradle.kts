@@ -53,8 +53,8 @@ publishing {
             name = "tacbRepo"
             url = uri("https://repo.tacb-mc.de/repository/maven-releases/")
             credentials {
-                username = findProperty("repoUsername") as String? ?: System.getenv("REPO_USERNAME")
-                password = findProperty("repoPassword") as String? ?: System.getenv("REPO_PASSWORD")
+                username = findProperty("REPOSILITE_USERNAME") as String? ?: System.getenv("REPOSILITE_USERNAME")
+                password = findProperty("REPOSILITE_PASSWORD") as String? ?: System.getenv("REPOSILITE_PASSWORD")
             }
         }
     }
