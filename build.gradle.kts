@@ -4,7 +4,7 @@ plugins {
     id("maven-publish")
 }
 
-group = "de.papercompiler"
+group = "de.papercompiler.tacbdatabase"
 version = "1.0-SNAPSHOT"
 
 repositories {

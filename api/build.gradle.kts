@@ -3,7 +3,7 @@ plugins {
     `maven-publish`
 }
 
-group = "de.papercompiler"
+group = "de.papercompiler.tacbdatabase"
 version = "1.0-SNAPSHOT"
 
 repositories {
@@ -51,7 +51,7 @@ publishing {
     repositories {
         maven {
             name = "tacbRepo"
-            url = uri("https://repo.tacb-mc.de/repository/maven-releases/")
+            url = uri("https://repo.tacb-mc.de/snapshots/")
             credentials {
                 username = findProperty("REPOSILITE_USERNAME") as String? ?: System.getenv("REPOSILITE_USERNAME")
                 password = findProperty("REPOSILITE_PASSWORD") as String? ?: System.getenv("REPOSILITE_PASSWORD")
