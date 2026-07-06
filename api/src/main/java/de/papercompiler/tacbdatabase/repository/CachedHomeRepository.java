@@ -111,7 +111,9 @@ public class CachedHomeRepository implements HomeRepository {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 homeDao.create(home);
-                cacheManager.put(CACHE_KEY_PREFIX + home.getId(), home, CACHE_TTL);
+                if (home.getId() != null) {
+                    cacheManager.put(CACHE_KEY_PREFIX + home.getId(), home, CACHE_TTL);
+                }
                 home.setDirty(false);
                 return home;
             } catch (Exception e) {
@@ -125,7 +127,9 @@ public class CachedHomeRepository implements HomeRepository {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 homeDao.update(home);
-                cacheManager.put(CACHE_KEY_PREFIX + home.getId(), home, CACHE_TTL);
+                if (home.getId() != null) {
+                    cacheManager.put(CACHE_KEY_PREFIX + home.getId(), home, CACHE_TTL);
+                }
                 home.setDirty(false);
                 return home;
             } catch (Exception e) {
@@ -139,7 +143,9 @@ public class CachedHomeRepository implements HomeRepository {
         return CompletableFuture.runAsync(() -> {
             try {
                 homeDao.delete(home);
-                cacheManager.evict(CACHE_KEY_PREFIX + home.getId());
+                if (home.getId() != null) {
+                    cacheManager.evict(CACHE_KEY_PREFIX + home.getId());
+                }
             } catch (Exception e) {
                 throw new RuntimeException("Failed to delete home", e);
             }
@@ -151,7 +157,9 @@ public class CachedHomeRepository implements HomeRepository {
         return CompletableFuture.runAsync(() -> {
             try {
                 homeDao.deleteById(id);
-                cacheManager.evict(CACHE_KEY_PREFIX + id);
+                if (id != null) {
+                    cacheManager.evict(CACHE_KEY_PREFIX + id);
+                }
             } catch (Exception e) {
                 throw new RuntimeException("Failed to delete home by id", e);
             }

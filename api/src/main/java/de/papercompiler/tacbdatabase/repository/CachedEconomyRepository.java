@@ -105,8 +105,12 @@ public class CachedEconomyRepository implements EconomyRepository {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 economyDao.create(economy);
-                cacheManager.put(CACHE_KEY_PREFIX + economy.getId(), economy, CACHE_TTL);
-                cacheManager.put(CACHE_KEY_PREFIX + "uuid:" + economy.getUuid(), economy, CACHE_TTL);
+                if (economy.getId() != null) {
+                    cacheManager.put(CACHE_KEY_PREFIX + economy.getId(), economy, CACHE_TTL);
+                }
+                if (economy.getUuid() != null) {
+                    cacheManager.put(CACHE_KEY_PREFIX + "uuid:" + economy.getUuid(), economy, CACHE_TTL);
+                }
                 economy.setDirty(false);
                 return economy;
             } catch (Exception e) {
@@ -120,8 +124,12 @@ public class CachedEconomyRepository implements EconomyRepository {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 economyDao.update(economy);
-                cacheManager.put(CACHE_KEY_PREFIX + economy.getId(), economy, CACHE_TTL);
-                cacheManager.put(CACHE_KEY_PREFIX + "uuid:" + economy.getUuid(), economy, CACHE_TTL);
+                if (economy.getId() != null) {
+                    cacheManager.put(CACHE_KEY_PREFIX + economy.getId(), economy, CACHE_TTL);
+                }
+                if (economy.getUuid() != null) {
+                    cacheManager.put(CACHE_KEY_PREFIX + "uuid:" + economy.getUuid(), economy, CACHE_TTL);
+                }
                 economy.setDirty(false);
                 return economy;
             } catch (Exception e) {
@@ -135,8 +143,12 @@ public class CachedEconomyRepository implements EconomyRepository {
         return CompletableFuture.runAsync(() -> {
             try {
                 economyDao.delete(economy);
-                cacheManager.evict(CACHE_KEY_PREFIX + economy.getId());
-                cacheManager.evict(CACHE_KEY_PREFIX + "uuid:" + economy.getUuid());
+                if (economy.getId() != null) {
+                    cacheManager.evict(CACHE_KEY_PREFIX + economy.getId());
+                }
+                if (economy.getUuid() != null) {
+                    cacheManager.evict(CACHE_KEY_PREFIX + "uuid:" + economy.getUuid());
+                }
             } catch (Exception e) {
                 throw new RuntimeException("Failed to delete economy", e);
             }
@@ -148,7 +160,9 @@ public class CachedEconomyRepository implements EconomyRepository {
         return CompletableFuture.runAsync(() -> {
             try {
                 economyDao.deleteById(id);
-                cacheManager.evict(CACHE_KEY_PREFIX + id);
+                if (id != null) {
+                    cacheManager.evict(CACHE_KEY_PREFIX + id);
+                }
             } catch (Exception e) {
                 throw new RuntimeException("Failed to delete economy by id", e);
             }

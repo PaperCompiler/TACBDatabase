@@ -59,7 +59,9 @@ public class RedisGuildRepository implements GuildRepository {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 guild.setDirty(true);
-                cacheManager.put(CACHE_KEY_PREFIX + guild.getId(), guild, CACHE_TTL);
+                if (guild.getId() != null) {
+                    cacheManager.put(CACHE_KEY_PREFIX + guild.getId(), guild, CACHE_TTL);
+                }
                 return guild;
             } catch (Exception e) {
                 throw new RuntimeException("Failed to save guild to cache", e);
@@ -75,14 +77,18 @@ public class RedisGuildRepository implements GuildRepository {
     @Override
     public CompletableFuture<Void> delete(Guild guild) {
         return CompletableFuture.runAsync(() -> {
-            cacheManager.evict(CACHE_KEY_PREFIX + guild.getId());
+            if (guild.getId() != null) {
+                cacheManager.evict(CACHE_KEY_PREFIX + guild.getId());
+            }
         });
     }
 
     @Override
     public CompletableFuture<Void> deleteById(Long id) {
         return CompletableFuture.runAsync(() -> {
-            cacheManager.evict(CACHE_KEY_PREFIX + id);
+            if (id != null) {
+                cacheManager.evict(CACHE_KEY_PREFIX + id);
+            }
         });
     }
 

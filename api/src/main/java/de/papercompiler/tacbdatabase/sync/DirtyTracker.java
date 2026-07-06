@@ -31,6 +31,9 @@ public class DirtyTracker {
      * @param entityId   the entity ID
      */
     public CompletableFuture<Void> markDirty(Class<? extends Entity> entityType, Long entityId) {
+        if (entityType == null || entityId == null) {
+            return CompletableFuture.completedFuture(null);
+        }
         String key = DIRTY_KEY_PREFIX + entityType.getSimpleName().toLowerCase() + ":" + entityId;
         return cacheManager.put(key, System.currentTimeMillis(), DIRTY_TTL);
     }

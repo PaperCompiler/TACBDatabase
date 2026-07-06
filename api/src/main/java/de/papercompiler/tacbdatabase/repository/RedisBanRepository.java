@@ -59,7 +59,9 @@ public class RedisBanRepository implements BanRepository {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 ban.setDirty(true);
-                cacheManager.put(CACHE_KEY_PREFIX + ban.getId(), ban, CACHE_TTL);
+                if (ban.getId() != null) {
+                    cacheManager.put(CACHE_KEY_PREFIX + ban.getId(), ban, CACHE_TTL);
+                }
                 return ban;
             } catch (Exception e) {
                 throw new RuntimeException("Failed to save ban to cache", e);
@@ -75,14 +77,18 @@ public class RedisBanRepository implements BanRepository {
     @Override
     public CompletableFuture<Void> delete(Ban ban) {
         return CompletableFuture.runAsync(() -> {
-            cacheManager.evict(CACHE_KEY_PREFIX + ban.getId());
+            if (ban.getId() != null) {
+                cacheManager.evict(CACHE_KEY_PREFIX + ban.getId());
+            }
         });
     }
 
     @Override
     public CompletableFuture<Void> deleteById(Long id) {
         return CompletableFuture.runAsync(() -> {
-            cacheManager.evict(CACHE_KEY_PREFIX + id);
+            if (id != null) {
+                cacheManager.evict(CACHE_KEY_PREFIX + id);
+            }
         });
     }
 

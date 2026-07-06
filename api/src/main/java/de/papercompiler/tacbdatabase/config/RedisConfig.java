@@ -1,7 +1,10 @@
 package de.papercompiler.tacbdatabase.config;
 
+import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
@@ -55,12 +58,13 @@ public class RedisConfig {
      */
     public String toUri() {
         try {
-            URI uri = new URI("redis", null, host, port, "/" + database, null, null);
             if (password != null && !password.isEmpty()) {
-                return "redis://:" + password + "@" + host + ":" + port + "/" + database;
+                String encodedPassword = URLEncoder.encode(password, StandardCharsets.UTF_8.name());
+                return "redis://:" + encodedPassword + "@" + host + ":" + port + "/" + database;
             }
+            URI uri = new URI("redis", null, host, port, "/" + database, null, null);
             return uri.toString();
-        } catch (URISyntaxException e) {
+        } catch (URISyntaxException | UnsupportedEncodingException e) {
             throw new IllegalArgumentException("Invalid Redis config", e);
         }
     }

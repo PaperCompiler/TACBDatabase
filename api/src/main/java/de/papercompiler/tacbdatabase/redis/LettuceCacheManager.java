@@ -72,7 +72,7 @@ public class LettuceCacheManager implements CacheManager {
                 return Optional.of(MAPPER.readValue(value, type));
             } catch (Exception e) {
                 LOGGER.error("Failed to get cache key: {}", key, e);
-                return Optional.empty();
+                throw new RuntimeException("Failed to get cache key: " + key, e);
             }
         }, executor);
     }
@@ -92,6 +92,7 @@ public class LettuceCacheManager implements CacheManager {
                 throw new RuntimeException("Failed to serialize cache value", e);
             } catch (Exception e) {
                 LOGGER.error("Failed to put cache key: {}", key, e);
+                throw new RuntimeException("Failed to put cache key: " + key, e);
             }
         }, executor);
     }
@@ -109,6 +110,7 @@ public class LettuceCacheManager implements CacheManager {
                 syncCommands.del(key);
             } catch (Exception e) {
                 LOGGER.error("Failed to evict cache key: {}", key, e);
+                throw new RuntimeException("Failed to evict cache key: " + key, e);
             }
         }, executor);
     }
@@ -134,6 +136,7 @@ public class LettuceCacheManager implements CacheManager {
                 LOGGER.debug("Evicted all keys matching pattern: {}", pattern);
             } catch (Exception e) {
                 LOGGER.error("Failed to evict cache pattern: {}", pattern, e);
+                throw new RuntimeException("Failed to evict cache pattern: " + pattern, e);
             }
         }, executor);
     }
@@ -147,6 +150,7 @@ public class LettuceCacheManager implements CacheManager {
                 LOGGER.info("Flushed all cache data");
             } catch (Exception e) {
                 LOGGER.error("Failed to flush cache", e);
+                throw new RuntimeException("Failed to flush cache", e);
             }
         }, executor);
     }
@@ -168,7 +172,7 @@ public class LettuceCacheManager implements CacheManager {
                 return keys;
             } catch (Exception e) {
                 LOGGER.error("Failed to get keys by pattern: {}", pattern, e);
-                return new HashSet<>();
+                throw new RuntimeException("Failed to get keys by pattern: " + pattern, e);
             }
         }, executor);
     }

@@ -1,25 +1,15 @@
 package de.papercompiler.tacbdatabase;
 
+import com.zaxxer.hikari.HikariDataSource;
 import de.papercompiler.tacbdatabase.cache.CacheManager;
 import de.papercompiler.tacbdatabase.config.TACBConfig;
-import de.papercompiler.tacbdatabase.entity.Ban;
-import de.papercompiler.tacbdatabase.entity.Economy;
-import de.papercompiler.tacbdatabase.entity.Entity;
-import de.papercompiler.tacbdatabase.entity.Guild;
-import de.papercompiler.tacbdatabase.entity.Home;
-import de.papercompiler.tacbdatabase.entity.Player;
+import de.papercompiler.tacbdatabase.entity.*;
 import de.papercompiler.tacbdatabase.platform.Platform;
 import de.papercompiler.tacbdatabase.platform.PlatformType;
-import de.papercompiler.tacbdatabase.platform.Server;
 import de.papercompiler.tacbdatabase.packet.LettucePacketManager;
 import de.papercompiler.tacbdatabase.packet.PacketManager;
 import de.papercompiler.tacbdatabase.pubsub.PubSubManager;
 import de.papercompiler.tacbdatabase.repository.BanRepository;
-import de.papercompiler.tacbdatabase.repository.CachedBanRepository;
-import de.papercompiler.tacbdatabase.repository.CachedEconomyRepository;
-import de.papercompiler.tacbdatabase.repository.CachedGuildRepository;
-import de.papercompiler.tacbdatabase.repository.CachedHomeRepository;
-import de.papercompiler.tacbdatabase.repository.CachedPlayerRepository;
 import de.papercompiler.tacbdatabase.repository.EconomyRepository;
 import de.papercompiler.tacbdatabase.repository.GuildRepository;
 import de.papercompiler.tacbdatabase.repository.HomeRepository;
@@ -63,6 +53,8 @@ public final class TACBDatabase {
     private final SyncScheduler syncScheduler;
     private final Scheduler scheduler;
     private final io.lettuce.core.RedisClient redisClient;
+    private final HikariDataSource dataSource;
+    private final com.j256.ormlite.support.ConnectionSource connectionSource;
 
     private TACBDatabase(
             Platform platform,
@@ -73,7 +65,9 @@ public final class TACBDatabase {
             Map<Class<?>, Repository<?, ?>> repositories,
             SyncScheduler syncScheduler,
             Scheduler scheduler,
-            io.lettuce.core.RedisClient redisClient) {
+            io.lettuce.core.RedisClient redisClient,
+            HikariDataSource dataSource,
+            com.j256.ormlite.support.ConnectionSource connectionSource) {
         this.platform = platform;
         this.platformType = platformType;
         this.cacheManager = cacheManager;
@@ -83,6 +77,8 @@ public final class TACBDatabase {
         this.syncScheduler = syncScheduler;
         this.scheduler = scheduler;
         this.redisClient = redisClient;
+        this.dataSource = dataSource;
+        this.connectionSource = connectionSource;
     }
 
     /**
@@ -103,7 +99,7 @@ public final class TACBDatabase {
         PubSubManager pubSubManager = new LettucePubSubManager(redisComponents.client(), config.getRedis());
 
         // Initialize repositories
-        Map<Class<?>, Repository<?, ?>> repositories = RepositoryFactory.create(
+        RepositoryFactory.RepositoryResult result = RepositoryFactory.create(
                 type, config, cacheManager, pubSubManager
         );
 
@@ -113,13 +109,13 @@ public final class TACBDatabase {
         // Initialize sync scheduler (master only)
         SyncScheduler syncScheduler = null;
         if (type == PlatformType.VELOCITY) {
-            syncScheduler = new SyncScheduler(repositories, cacheManager, config.getSyncInterval(), platform.getScheduler());
+            syncScheduler = new SyncScheduler(result.getRepositories(), cacheManager, config.getSyncInterval(), platform.getScheduler());
             syncScheduler.start();
             LOGGER.info("SyncScheduler started with interval: {}", config.getSyncInterval());
         }
 
         return new TACBDatabase(
-                platform, type, cacheManager, pubSubManager, packetManager, repositories, syncScheduler, platform.getScheduler(), redisComponents.client()
+                platform, type, cacheManager, pubSubManager, packetManager, result.getRepositories(), syncScheduler, platform.getScheduler(), redisComponents.client(), result.getDataSource(), result.getConnectionSource()
         );
     }
 
@@ -182,7 +178,7 @@ public final class TACBDatabase {
      * @return the PlayerRepository
      */
     public PlayerRepository getPlayerRepository() {
-        return (PlayerRepository) repositories.get(Player.class);
+        return (PlayerRepository) repositories.get(TACBPlayer.class);
     }
 
     /**
@@ -239,7 +235,18 @@ public final class TACBDatabase {
         packetManager.close();
         pubSubManager.close();
         cacheManager.close();
-        
+
+        // Close the ORMLite connection source (master only)
+        // This also closes the underlying HikariCP connection pool
+        if (connectionSource != null) {
+            try {
+                connectionSource.close();
+                LOGGER.info("Closed ORMLite connection source and PostgreSQL connection pool");
+            } catch (Exception e) {
+                LOGGER.error("Error closing connection source", e);
+            }
+        }
+
         // Shutdown the shared Redis client last, after all connections are closed
         if (redisClient != null) {
             try {

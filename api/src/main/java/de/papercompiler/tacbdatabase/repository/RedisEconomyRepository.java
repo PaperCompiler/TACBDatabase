@@ -68,8 +68,12 @@ public class RedisEconomyRepository implements EconomyRepository {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 economy.setDirty(true);
-                cacheManager.put(CACHE_KEY_PREFIX + economy.getId(), economy, CACHE_TTL);
-                cacheManager.put(CACHE_KEY_PREFIX + "uuid:" + economy.getUuid(), economy, CACHE_TTL);
+                if (economy.getId() != null) {
+                    cacheManager.put(CACHE_KEY_PREFIX + economy.getId(), economy, CACHE_TTL);
+                }
+                if (economy.getUuid() != null) {
+                    cacheManager.put(CACHE_KEY_PREFIX + "uuid:" + economy.getUuid(), economy, CACHE_TTL);
+                }
                 return economy;
             } catch (Exception e) {
                 throw new RuntimeException("Failed to save economy to cache", e);
@@ -85,15 +89,21 @@ public class RedisEconomyRepository implements EconomyRepository {
     @Override
     public CompletableFuture<Void> delete(Economy economy) {
         return CompletableFuture.runAsync(() -> {
-            cacheManager.evict(CACHE_KEY_PREFIX + economy.getId());
-            cacheManager.evict(CACHE_KEY_PREFIX + "uuid:" + economy.getUuid());
+            if (economy.getId() != null) {
+                cacheManager.evict(CACHE_KEY_PREFIX + economy.getId());
+            }
+            if (economy.getUuid() != null) {
+                cacheManager.evict(CACHE_KEY_PREFIX + "uuid:" + economy.getUuid());
+            }
         });
     }
 
     @Override
     public CompletableFuture<Void> deleteById(Long id) {
         return CompletableFuture.runAsync(() -> {
-            cacheManager.evict(CACHE_KEY_PREFIX + id);
+            if (id != null) {
+                cacheManager.evict(CACHE_KEY_PREFIX + id);
+            }
         });
     }
 

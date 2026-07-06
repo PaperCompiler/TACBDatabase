@@ -2,7 +2,6 @@ package de.papercompiler.tacbdatabase.entity;
 
 import org.junit.jupiter.api.Test;
 
-import java.time.Instant;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -14,7 +13,7 @@ class PlayerTest {
         UUID uuid = UUID.randomUUID();
         String name = "TestPlayer";
 
-        Player player = new Player(uuid, name);
+        TACBPlayer player = new TACBPlayer(uuid, name);
 
         assertEquals(uuid, player.getUuid());
         assertEquals(name, player.getName());
@@ -27,7 +26,7 @@ class PlayerTest {
 
     @Test
     void noArgConstructor_CreatesEmptyPlayer() {
-        Player player = new Player();
+        TACBPlayer player = new TACBPlayer();
 
         assertNull(player.getId());
         assertNull(player.getUuid());
@@ -38,14 +37,14 @@ class PlayerTest {
 
     @Test
     void parameterizedConstructor_SetsDirtyFlag() {
-        Player player = new Player(UUID.randomUUID(), "Test");
+        TACBPlayer player = new TACBPlayer(UUID.randomUUID(), "Test");
 
         assertTrue(player.isDirty());
     }
 
     @Test
     void setName_UpdatesNameAndMarksDirty() {
-        Player player = new Player();
+        TACBPlayer player = new TACBPlayer();
         player.setDirty(false);
 
         player.setName("NewName");
@@ -57,7 +56,7 @@ class PlayerTest {
 
     @Test
     void setLastServer_UpdatesAndMarksDirty() {
-        Player player = new Player();
+        TACBPlayer player = new TACBPlayer();
         player.setDirty(false);
 
         player.setLastServer("lobby-1");
@@ -68,7 +67,7 @@ class PlayerTest {
 
     @Test
     void setPlaytimeTicks_UpdatesAndMarksDirty() {
-        Player player = new Player();
+        TACBPlayer player = new TACBPlayer();
         player.setDirty(false);
 
         player.setPlaytimeTicks(1000);
@@ -79,10 +78,10 @@ class PlayerTest {
 
     @Test
     void equals_SameId_ReturnsTrue() {
-        Player p1 = new Player();
+        TACBPlayer p1 = new TACBPlayer();
         p1.setId(1L);
 
-        Player p2 = new Player();
+        TACBPlayer p2 = new TACBPlayer();
         p2.setId(1L);
 
         assertEquals(p1, p2);
@@ -91,10 +90,10 @@ class PlayerTest {
 
     @Test
     void equals_DifferentId_ReturnsFalse() {
-        Player p1 = new Player();
+        TACBPlayer p1 = new TACBPlayer();
         p1.setId(1L);
 
-        Player p2 = new Player();
+        TACBPlayer p2 = new TACBPlayer();
         p2.setId(2L);
 
         assertNotEquals(p1, p2);
@@ -102,15 +101,15 @@ class PlayerTest {
 
     @Test
     void equals_NullId_ReturnsFalse() {
-        Player p1 = new Player();
-        Player p2 = new Player();
+        TACBPlayer p1 = new TACBPlayer();
+        TACBPlayer p2 = new TACBPlayer();
 
         assertNotEquals(p1, p2);
     }
 
     @Test
     void equals_SameInstance_ReturnsTrue() {
-        Player p1 = new Player();
+        TACBPlayer p1 = new TACBPlayer();
         p1.setId(1L);
 
         assertEquals(p1, p1);
@@ -118,7 +117,7 @@ class PlayerTest {
 
     @Test
     void equals_NullObject_ReturnsFalse() {
-        Player p1 = new Player();
+        TACBPlayer p1 = new TACBPlayer();
         p1.setId(1L);
 
         assertNotEquals(p1, null);
@@ -126,7 +125,7 @@ class PlayerTest {
 
     @Test
     void equals_DifferentClass_ReturnsFalse() {
-        Player p1 = new Player();
+        TACBPlayer p1 = new TACBPlayer();
         p1.setId(1L);
 
         assertNotEquals(p1, "not a player");
@@ -134,8 +133,8 @@ class PlayerTest {
 
     @Test
     void hashCode_NullId_UsesIdentityHashCode() {
-        Player p1 = new Player();
-        Player p2 = new Player();
+        TACBPlayer p1 = new TACBPlayer();
+        TACBPlayer p2 = new TACBPlayer();
 
         // Both should have identity hash codes (different from each other)
         assertNotEquals(p1.hashCode(), p2.hashCode());
@@ -143,7 +142,7 @@ class PlayerTest {
 
     @Test
     void setDirty_CanToggleDirtyFlag() {
-        Player player = new Player();
+        TACBPlayer player = new TACBPlayer();
         assertFalse(player.isDirty());
 
         player.setDirty(true);

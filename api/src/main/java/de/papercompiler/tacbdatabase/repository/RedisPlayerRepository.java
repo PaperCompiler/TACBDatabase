@@ -1,10 +1,9 @@
 package de.papercompiler.tacbdatabase.repository;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import de.papercompiler.tacbdatabase.cache.CacheManager;
-import de.papercompiler.tacbdatabase.entity.Player;
+import de.papercompiler.tacbdatabase.entity.TACBPlayer;
 import de.papercompiler.tacbdatabase.pubsub.PubSubManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,8 +37,8 @@ public class RedisPlayerRepository implements PlayerRepository {
     }
 
     @Override
-    public CompletableFuture<Optional<Player>> findById(Long id) {
-        return cacheManager.get(CACHE_KEY_PREFIX + id, Player.class)
+    public CompletableFuture<Optional<TACBPlayer>> findById(Long id) {
+        return cacheManager.get(CACHE_KEY_PREFIX + id, TACBPlayer.class)
                 .thenApply(optional -> optional.map(p -> {
                     p.setDirty(false);
                     return p;
@@ -47,8 +46,8 @@ public class RedisPlayerRepository implements PlayerRepository {
     }
 
     @Override
-    public CompletableFuture<Optional<Player>> findByUuid(UUID uuid) {
-        return cacheManager.get(CACHE_KEY_PREFIX + "uuid:" + uuid, Player.class)
+    public CompletableFuture<Optional<TACBPlayer>> findByUuid(UUID uuid) {
+        return cacheManager.get(CACHE_KEY_PREFIX + "uuid:" + uuid, TACBPlayer.class)
                 .thenApply(optional -> optional.map(p -> {
                     p.setDirty(false);
                     return p;
@@ -56,26 +55,26 @@ public class RedisPlayerRepository implements PlayerRepository {
     }
 
     @Override
-    public CompletableFuture<Optional<Player>> findByName(String name) {
+    public CompletableFuture<Optional<TACBPlayer>> findByName(String name) {
         // On slave nodes, we can't query by name efficiently from Redis
         // This would require a secondary index or scanning
         return CompletableFuture.completedFuture(Optional.empty());
     }
 
     @Override
-    public CompletableFuture<List<Player>> findOnline() {
+    public CompletableFuture<List<TACBPlayer>> findOnline() {
         // On slave nodes, we can't efficiently query online players from Redis
         return CompletableFuture.completedFuture(new ArrayList<>());
     }
 
     @Override
-    public CompletableFuture<List<Player>> findAll() {
+    public CompletableFuture<List<TACBPlayer>> findAll() {
         // On slave nodes, we can't efficiently query all players from Redis
         return CompletableFuture.completedFuture(new ArrayList<>());
     }
 
     @Override
-    public CompletableFuture<Player> save(Player player) {
+    public CompletableFuture<TACBPlayer> save(TACBPlayer player) {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 // Generate a temporary ID if not set (will be replaced by master node)
@@ -84,8 +83,12 @@ public class RedisPlayerRepository implements PlayerRepository {
                 }
                 player.setDirty(true);
                 cacheManager.put(CACHE_KEY_PREFIX + player.getId(), player, CACHE_TTL);
-                cacheManager.put(CACHE_KEY_PREFIX + "uuid:" + player.getUuid(), player, CACHE_TTL);
-                cacheManager.put(CACHE_KEY_PREFIX + "name:" + player.getName(), player, CACHE_TTL);
+                if (player.getUuid() != null) {
+                    cacheManager.put(CACHE_KEY_PREFIX + "uuid:" + player.getUuid(), player, CACHE_TTL);
+                }
+                if (player.getName() != null) {
+                    cacheManager.put(CACHE_KEY_PREFIX + "name:" + player.getName(), player, CACHE_TTL);
+                }
                 return player;
             } catch (Exception e) {
                 throw new RuntimeException("Failed to save player to cache", e);
@@ -94,28 +97,37 @@ public class RedisPlayerRepository implements PlayerRepository {
     }
 
     @Override
-    public CompletableFuture<Player> update(Player player) {
+    public CompletableFuture<TACBPlayer> update(TACBPlayer player) {
         return save(player);
     }
 
     @Override
-    public CompletableFuture<Void> delete(Player player) {
+    public CompletableFuture<Void> delete(TACBPlayer player) {
         return CompletableFuture.runAsync(() -> {
-            cacheManager.evict(CACHE_KEY_PREFIX + player.getId());
-            cacheManager.evict(CACHE_KEY_PREFIX + "uuid:" + player.getUuid());
+            if (player.getId() != null) {
+                cacheManager.evict(CACHE_KEY_PREFIX + player.getId());
+            }
+            if (player.getUuid() != null) {
+                cacheManager.evict(CACHE_KEY_PREFIX + "uuid:" + player.getUuid());
+            }
+            if (player.getName() != null) {
+                cacheManager.evict(CACHE_KEY_PREFIX + "name:" + player.getName());
+            }
         });
     }
 
     @Override
     public CompletableFuture<Void> deleteById(Long id) {
         return CompletableFuture.runAsync(() -> {
-            cacheManager.evict(CACHE_KEY_PREFIX + id);
+            if (id != null) {
+                cacheManager.evict(CACHE_KEY_PREFIX + id);
+            }
         });
     }
 
     @Override
     public CompletableFuture<Boolean> exists(Long id) {
-        return cacheManager.get(CACHE_KEY_PREFIX + id, Player.class)
+        return cacheManager.get(CACHE_KEY_PREFIX + id, TACBPlayer.class)
                 .thenApply(Optional::isPresent);
     }
 

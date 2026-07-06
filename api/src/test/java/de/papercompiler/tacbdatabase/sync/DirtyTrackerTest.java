@@ -1,12 +1,10 @@
 package de.papercompiler.tacbdatabase.sync;
 
 import de.papercompiler.tacbdatabase.cache.CacheManager;
-import de.papercompiler.tacbdatabase.entity.Entity;
-import de.papercompiler.tacbdatabase.entity.Player;
+import de.papercompiler.tacbdatabase.entity.TACBPlayer;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
@@ -75,7 +73,7 @@ class DirtyTrackerTest {
         MockCacheManager cacheManager = new MockCacheManager();
         DirtyTracker tracker = new DirtyTracker(cacheManager);
 
-        tracker.markDirty(Player.class, 42L).join();
+        tracker.markDirty(TACBPlayer.class, 42L).join();
 
         assertTrue(cacheManager.keys.contains("tacb:dirty:player:42"));
     }
@@ -85,10 +83,10 @@ class DirtyTrackerTest {
         MockCacheManager cacheManager = new MockCacheManager();
         DirtyTracker tracker = new DirtyTracker(cacheManager);
 
-        tracker.markDirty(Player.class, 42L).join();
+        tracker.markDirty(TACBPlayer.class, 42L).join();
         assertTrue(cacheManager.keys.contains("tacb:dirty:player:42"));
 
-        tracker.clearDirty(Player.class, 42L).join();
+        tracker.clearDirty(TACBPlayer.class, 42L).join();
         assertFalse(cacheManager.keys.contains("tacb:dirty:player:42"));
     }
 
@@ -97,11 +95,11 @@ class DirtyTrackerTest {
         MockCacheManager cacheManager = new MockCacheManager();
         DirtyTracker tracker = new DirtyTracker(cacheManager);
 
-        tracker.markDirty(Player.class, 1L).join();
-        tracker.markDirty(Player.class, 2L).join();
-        tracker.markDirty(Player.class, 3L).join();
+        tracker.markDirty(TACBPlayer.class, 1L).join();
+        tracker.markDirty(TACBPlayer.class, 2L).join();
+        tracker.markDirty(TACBPlayer.class, 3L).join();
 
-        Set<Long> dirtyIds = tracker.getDirtyIds(Player.class).join();
+        Set<Long> dirtyIds = tracker.getDirtyIds(TACBPlayer.class).join();
 
         assertEquals(new HashSet<>(Set.of(1L, 2L, 3L)), dirtyIds);
     }
@@ -111,7 +109,7 @@ class DirtyTrackerTest {
         MockCacheManager cacheManager = new MockCacheManager();
         DirtyTracker tracker = new DirtyTracker(cacheManager);
 
-        Set<Long> dirtyIds = tracker.getDirtyIds(Player.class).join();
+        Set<Long> dirtyIds = tracker.getDirtyIds(TACBPlayer.class).join();
 
         assertTrue(dirtyIds.isEmpty());
     }
@@ -121,10 +119,10 @@ class DirtyTrackerTest {
         MockCacheManager cacheManager = new MockCacheManager();
         DirtyTracker tracker = new DirtyTracker(cacheManager);
 
-        tracker.markDirty(Player.class, 1L).join();
+        tracker.markDirty(TACBPlayer.class, 1L).join();
         tracker.markDirty(de.papercompiler.tacbdatabase.entity.Guild.class, 10L).join();
 
-        Set<Long> playerDirtyIds = tracker.getDirtyIds(Player.class).join();
+        Set<Long> playerDirtyIds = tracker.getDirtyIds(TACBPlayer.class).join();
         Set<Long> guildDirtyIds = tracker.getDirtyIds(de.papercompiler.tacbdatabase.entity.Guild.class).join();
 
         assertEquals(Set.of(1L), playerDirtyIds);
@@ -139,7 +137,7 @@ class DirtyTrackerTest {
 
         DirtyTracker tracker = new DirtyTracker(cacheManager);
 
-        Set<Long> dirtyIds = tracker.getDirtyIds(Player.class).join();
+        Set<Long> dirtyIds = tracker.getDirtyIds(TACBPlayer.class).join();
 
         assertTrue(dirtyIds.isEmpty());
     }

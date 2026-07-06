@@ -59,7 +59,9 @@ public class RedisHomeRepository implements HomeRepository {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 home.setDirty(true);
-                cacheManager.put(CACHE_KEY_PREFIX + home.getId(), home, CACHE_TTL);
+                if (home.getId() != null) {
+                    cacheManager.put(CACHE_KEY_PREFIX + home.getId(), home, CACHE_TTL);
+                }
                 return home;
             } catch (Exception e) {
                 throw new RuntimeException("Failed to save home to cache", e);
@@ -75,14 +77,18 @@ public class RedisHomeRepository implements HomeRepository {
     @Override
     public CompletableFuture<Void> delete(Home home) {
         return CompletableFuture.runAsync(() -> {
-            cacheManager.evict(CACHE_KEY_PREFIX + home.getId());
+            if (home.getId() != null) {
+                cacheManager.evict(CACHE_KEY_PREFIX + home.getId());
+            }
         });
     }
 
     @Override
     public CompletableFuture<Void> deleteById(Long id) {
         return CompletableFuture.runAsync(() -> {
-            cacheManager.evict(CACHE_KEY_PREFIX + id);
+            if (id != null) {
+                cacheManager.evict(CACHE_KEY_PREFIX + id);
+            }
         });
     }
 

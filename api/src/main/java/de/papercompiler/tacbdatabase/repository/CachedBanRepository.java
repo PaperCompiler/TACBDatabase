@@ -109,7 +109,9 @@ public class CachedBanRepository implements BanRepository {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 banDao.create(ban);
-                cacheManager.put(CACHE_KEY_PREFIX + ban.getId(), ban, CACHE_TTL);
+                if (ban.getId() != null) {
+                    cacheManager.put(CACHE_KEY_PREFIX + ban.getId(), ban, CACHE_TTL);
+                }
                 ban.setDirty(false);
                 return ban;
             } catch (Exception e) {
@@ -123,7 +125,9 @@ public class CachedBanRepository implements BanRepository {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 banDao.update(ban);
-                cacheManager.put(CACHE_KEY_PREFIX + ban.getId(), ban, CACHE_TTL);
+                if (ban.getId() != null) {
+                    cacheManager.put(CACHE_KEY_PREFIX + ban.getId(), ban, CACHE_TTL);
+                }
                 ban.setDirty(false);
                 return ban;
             } catch (Exception e) {
@@ -137,7 +141,9 @@ public class CachedBanRepository implements BanRepository {
         return CompletableFuture.runAsync(() -> {
             try {
                 banDao.delete(ban);
-                cacheManager.evict(CACHE_KEY_PREFIX + ban.getId());
+                if (ban.getId() != null) {
+                    cacheManager.evict(CACHE_KEY_PREFIX + ban.getId());
+                }
             } catch (Exception e) {
                 throw new RuntimeException("Failed to delete ban", e);
             }
@@ -149,7 +155,9 @@ public class CachedBanRepository implements BanRepository {
         return CompletableFuture.runAsync(() -> {
             try {
                 banDao.deleteById(id);
-                cacheManager.evict(CACHE_KEY_PREFIX + id);
+                if (id != null) {
+                    cacheManager.evict(CACHE_KEY_PREFIX + id);
+                }
             } catch (Exception e) {
                 throw new RuntimeException("Failed to delete ban by id", e);
             }
