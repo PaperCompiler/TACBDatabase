@@ -74,20 +74,20 @@ class DirtyTrackerTest {
         DirtyTracker tracker = new DirtyTracker(cacheManager);
 
         tracker.markDirty(TACBPlayer.class, 42L).join();
-
-        assertTrue(cacheManager.keys.contains("tacb:dirty:player:42"));
+ 
+        assertTrue(cacheManager.keys.contains("tacb:dirty:tacbplayer:42"));
     }
-
+ 
     @Test
     void clearDirty_RemovesKeyFromCache() {
         MockCacheManager cacheManager = new MockCacheManager();
         DirtyTracker tracker = new DirtyTracker(cacheManager);
-
+ 
         tracker.markDirty(TACBPlayer.class, 42L).join();
-        assertTrue(cacheManager.keys.contains("tacb:dirty:player:42"));
-
+        assertTrue(cacheManager.keys.contains("tacb:dirty:tacbplayer:42"));
+ 
         tracker.clearDirty(TACBPlayer.class, 42L).join();
-        assertFalse(cacheManager.keys.contains("tacb:dirty:player:42"));
+        assertFalse(cacheManager.keys.contains("tacb:dirty:tacbplayer:42"));
     }
 
     @Test
@@ -133,7 +133,7 @@ class DirtyTrackerTest {
     void getDirtyIds_IgnoresMalformedKeys() {
         MockCacheManager cacheManager = new MockCacheManager();
         // Manually add a malformed key
-        cacheManager.keys.add("tacb:dirty:player:notanumber");
+        cacheManager.keys.add("tacb:dirty:tacbplayer:notanumber");
 
         DirtyTracker tracker = new DirtyTracker(cacheManager);
 
