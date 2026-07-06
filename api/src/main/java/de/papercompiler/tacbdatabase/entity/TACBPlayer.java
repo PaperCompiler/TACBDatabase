@@ -10,7 +10,7 @@ import java.util.UUID;
  * Player entity.
  */
 @DatabaseTable(tableName = "players")
-public class Player implements Entity {
+public class TACBPlayer implements Entity {
 
     @DatabaseField(id = true, generatedId = true)
     private Long id;
@@ -42,11 +42,11 @@ public class Player implements Entity {
     // Dirty flag for sync (not persisted to DB)
     private transient boolean dirty;
 
-    public Player() {
+    public TACBPlayer() {
         // ORMLite requires a no-arg constructor
     }
 
-    public Player(UUID uuid, String name) {
+    public TACBPlayer(UUID uuid, String name) {
         this.uuid = uuid;
         this.name = name;
         this.firstJoin = Instant.now();
@@ -154,8 +154,8 @@ public class Player implements Entity {
     @Override
     public boolean equals(Object obj) {
         if (this == obj) return true;
-        if (obj == null || !(obj instanceof Player)) return false;
-        Player other = (Player) obj;
+        if (obj == null || !(obj instanceof TACBPlayer)) return false;
+        TACBPlayer other = (TACBPlayer) obj;
         return id != null && id.equals(other.id);
     }
 

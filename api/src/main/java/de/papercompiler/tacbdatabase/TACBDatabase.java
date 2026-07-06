@@ -3,24 +3,13 @@ package de.papercompiler.tacbdatabase;
 import com.zaxxer.hikari.HikariDataSource;
 import de.papercompiler.tacbdatabase.cache.CacheManager;
 import de.papercompiler.tacbdatabase.config.TACBConfig;
-import de.papercompiler.tacbdatabase.entity.Ban;
-import de.papercompiler.tacbdatabase.entity.Economy;
-import de.papercompiler.tacbdatabase.entity.Entity;
-import de.papercompiler.tacbdatabase.entity.Guild;
-import de.papercompiler.tacbdatabase.entity.Home;
-import de.papercompiler.tacbdatabase.entity.Player;
+import de.papercompiler.tacbdatabase.entity.*;
 import de.papercompiler.tacbdatabase.platform.Platform;
 import de.papercompiler.tacbdatabase.platform.PlatformType;
-import de.papercompiler.tacbdatabase.platform.Server;
 import de.papercompiler.tacbdatabase.packet.LettucePacketManager;
 import de.papercompiler.tacbdatabase.packet.PacketManager;
 import de.papercompiler.tacbdatabase.pubsub.PubSubManager;
 import de.papercompiler.tacbdatabase.repository.BanRepository;
-import de.papercompiler.tacbdatabase.repository.CachedBanRepository;
-import de.papercompiler.tacbdatabase.repository.CachedEconomyRepository;
-import de.papercompiler.tacbdatabase.repository.CachedGuildRepository;
-import de.papercompiler.tacbdatabase.repository.CachedHomeRepository;
-import de.papercompiler.tacbdatabase.repository.CachedPlayerRepository;
 import de.papercompiler.tacbdatabase.repository.EconomyRepository;
 import de.papercompiler.tacbdatabase.repository.GuildRepository;
 import de.papercompiler.tacbdatabase.repository.HomeRepository;
@@ -189,7 +178,7 @@ public final class TACBDatabase {
      * @return the PlayerRepository
      */
     public PlayerRepository getPlayerRepository() {
-        return (PlayerRepository) repositories.get(Player.class);
+        return (PlayerRepository) repositories.get(TACBPlayer.class);
     }
 
     /**

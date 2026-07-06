@@ -8,11 +8,7 @@ import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import de.papercompiler.tacbdatabase.cache.CacheManager;
 import de.papercompiler.tacbdatabase.config.DatabaseConfig;
-import de.papercompiler.tacbdatabase.entity.Ban;
-import de.papercompiler.tacbdatabase.entity.Economy;
-import de.papercompiler.tacbdatabase.entity.Guild;
-import de.papercompiler.tacbdatabase.entity.Home;
-import de.papercompiler.tacbdatabase.entity.Player;
+import de.papercompiler.tacbdatabase.entity.*;
 import de.papercompiler.tacbdatabase.platform.PlatformType;
 import de.papercompiler.tacbdatabase.pubsub.PubSubManager;
 import org.slf4j.Logger;
@@ -119,14 +115,14 @@ public final class RepositoryFactory {
             connectionSource = new DataSourceConnectionSource((DataSource) dataSource, dbConfig.getJdbcUrl());
 
             // Create ORMLite DAOs
-            Dao<Player, Long> playerDao = DaoManager.createDao(connectionSource, Player.class);
+            Dao<TACBPlayer, Long> playerDao = DaoManager.createDao(connectionSource, TACBPlayer.class);
             Dao<Guild, Long> guildDao = DaoManager.createDao(connectionSource, Guild.class);
             Dao<Economy, Long> economyDao = DaoManager.createDao(connectionSource, Economy.class);
             Dao<Home, Long> homeDao = DaoManager.createDao(connectionSource, Home.class);
             Dao<Ban, Long> banDao = DaoManager.createDao(connectionSource, Ban.class);
 
             // Create cached repositories
-            repositories.put(Player.class, new CachedPlayerRepository(playerDao, cacheManager, pubSubManager));
+            repositories.put(TACBPlayer.class, new CachedPlayerRepository(playerDao, cacheManager, pubSubManager));
             repositories.put(Guild.class, new CachedGuildRepository(guildDao, cacheManager, pubSubManager));
             repositories.put(Economy.class, new CachedEconomyRepository(economyDao, cacheManager, pubSubManager));
             repositories.put(Home.class, new CachedHomeRepository(homeDao, cacheManager, pubSubManager));
@@ -147,7 +143,7 @@ public final class RepositoryFactory {
             Map<Class<?>, Repository<?, ?>> repositories) {
 
         // Slave nodes use Redis-only repositories
-        repositories.put(Player.class, new RedisPlayerRepository(cacheManager, pubSubManager));
+        repositories.put(TACBPlayer.class, new RedisPlayerRepository(cacheManager, pubSubManager));
         repositories.put(Guild.class, new RedisGuildRepository(cacheManager, pubSubManager));
         repositories.put(Economy.class, new RedisEconomyRepository(cacheManager, pubSubManager));
         repositories.put(Home.class, new RedisHomeRepository(cacheManager, pubSubManager));

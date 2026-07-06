@@ -1,12 +1,10 @@
 package de.papercompiler.tacbdatabase.repository;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.j256.ormlite.dao.Dao;
-import com.j256.ormlite.stmt.QueryBuilder;
 import de.papercompiler.tacbdatabase.cache.CacheManager;
-import de.papercompiler.tacbdatabase.entity.Player;
+import de.papercompiler.tacbdatabase.entity.TACBPlayer;
 import de.papercompiler.tacbdatabase.pubsub.PubSubManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,19 +26,19 @@ public class CachedPlayerRepository implements PlayerRepository {
     private static final Duration CACHE_TTL = Duration.ofMinutes(5);
     private static final ObjectMapper MAPPER = new ObjectMapper().registerModule(new JavaTimeModule());
 
-    private final Dao<Player, Long> playerDao;
+    private final Dao<TACBPlayer, Long> playerDao;
     private final CacheManager cacheManager;
     private final PubSubManager pubSubManager;
 
-    public CachedPlayerRepository(Dao<Player, Long> playerDao, CacheManager cacheManager, PubSubManager pubSubManager) {
+    public CachedPlayerRepository(Dao<TACBPlayer, Long> playerDao, CacheManager cacheManager, PubSubManager pubSubManager) {
         this.playerDao = playerDao;
         this.cacheManager = cacheManager;
         this.pubSubManager = pubSubManager;
     }
 
     @Override
-    public CompletableFuture<Optional<Player>> findById(Long id) {
-        return cacheManager.get(CACHE_KEY_PREFIX + id, Player.class)
+    public CompletableFuture<Optional<TACBPlayer>> findById(Long id) {
+        return cacheManager.get(CACHE_KEY_PREFIX + id, TACBPlayer.class)
                 .thenApply(optional -> optional.map(p -> {
                     p.setDirty(false);
                     return p;
@@ -48,7 +46,7 @@ public class CachedPlayerRepository implements PlayerRepository {
                 .exceptionally(e -> {
                     LOGGER.error("Cache miss, falling back to DB for player id={}", id, e);
                     try {
-                        Player player = playerDao.queryForId(id);
+                        TACBPlayer player = playerDao.queryForId(id);
                         if (player != null) {
                             cacheManager.put(CACHE_KEY_PREFIX + id, player, CACHE_TTL);
                             player.setDirty(false);
@@ -62,16 +60,16 @@ public class CachedPlayerRepository implements PlayerRepository {
     }
 
     @Override
-    public CompletableFuture<Optional<Player>> findByUuid(UUID uuid) {
-        return cacheManager.get(CACHE_KEY_PREFIX + "uuid:" + uuid, Player.class)
+    public CompletableFuture<Optional<TACBPlayer>> findByUuid(UUID uuid) {
+        return cacheManager.get(CACHE_KEY_PREFIX + "uuid:" + uuid, TACBPlayer.class)
                 .thenApply(optional -> optional.map(p -> {
                     p.setDirty(false);
                     return p;
                 }))
                 .exceptionally(e -> {
                     try {
-                        List<Player> results = playerDao.queryForEq("uuid", uuid);
-                        Player player = results.isEmpty() ? null : results.get(0);
+                        List<TACBPlayer> results = playerDao.queryForEq("uuid", uuid);
+                        TACBPlayer player = results.isEmpty() ? null : results.get(0);
                         if (player != null) {
                             cacheManager.put(CACHE_KEY_PREFIX + "uuid:" + uuid, player, CACHE_TTL);
                             cacheManager.put(CACHE_KEY_PREFIX + player.getId(), player, CACHE_TTL);
@@ -86,16 +84,16 @@ public class CachedPlayerRepository implements PlayerRepository {
     }
 
     @Override
-    public CompletableFuture<Optional<Player>> findByName(String name) {
-        return cacheManager.get(CACHE_KEY_PREFIX + "name:" + name, Player.class)
+    public CompletableFuture<Optional<TACBPlayer>> findByName(String name) {
+        return cacheManager.get(CACHE_KEY_PREFIX + "name:" + name, TACBPlayer.class)
                 .thenApply(optional -> optional.map(p -> {
                     p.setDirty(false);
                     return p;
                 }))
                 .exceptionally(e -> {
                     try {
-                        List<Player> results = playerDao.queryForEq("name", name);
-                        Player player = results.isEmpty() ? null : results.get(0);
+                        List<TACBPlayer> results = playerDao.queryForEq("name", name);
+                        TACBPlayer player = results.isEmpty() ? null : results.get(0);
                         if (player != null) {
                             cacheManager.put(CACHE_KEY_PREFIX + player.getId(), player, CACHE_TTL);
                             cacheManager.put(CACHE_KEY_PREFIX + "uuid:" + player.getUuid(), player, CACHE_TTL);
@@ -111,9 +109,9 @@ public class CachedPlayerRepository implements PlayerRepository {
     }
 
     @Override
-    public CompletableFuture<List<Player>> findOnline() {
+    public CompletableFuture<List<TACBPlayer>> findOnline() {
         try {
-            List<Player> results = playerDao.queryBuilder()
+            List<TACBPlayer> results = playerDao.queryBuilder()
                     .where()
                     .isNotNull("lastServer")
                     .query();
@@ -125,9 +123,9 @@ public class CachedPlayerRepository implements PlayerRepository {
     }
 
     @Override
-    public CompletableFuture<List<Player>> findAll() {
+    public CompletableFuture<List<TACBPlayer>> findAll() {
         try {
-            List<Player> results = playerDao.queryForAll();
+            List<TACBPlayer> results = playerDao.queryForAll();
             return CompletableFuture.completedFuture(results);
         } catch (Exception e) {
             LOGGER.error("Failed to query all players", e);
@@ -136,7 +134,7 @@ public class CachedPlayerRepository implements PlayerRepository {
     }
 
     @Override
-    public CompletableFuture<Player> save(Player player) {
+    public CompletableFuture<TACBPlayer> save(TACBPlayer player) {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 playerDao.create(player);
@@ -158,7 +156,7 @@ public class CachedPlayerRepository implements PlayerRepository {
     }
 
     @Override
-    public CompletableFuture<Player> update(Player player) {
+    public CompletableFuture<TACBPlayer> update(TACBPlayer player) {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 playerDao.update(player);
@@ -177,7 +175,7 @@ public class CachedPlayerRepository implements PlayerRepository {
     }
 
     @Override
-    public CompletableFuture<Void> delete(Player player) {
+    public CompletableFuture<Void> delete(TACBPlayer player) {
         return CompletableFuture.runAsync(() -> {
             try {
                 playerDao.delete(player);
